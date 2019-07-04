@@ -1,9 +1,5 @@
 Fancyload
 =====================
-<img src="https://stefvanlooveren.me/sites/default/files/2019-07/fancyload.gif?raw=true" width="800px">
-=====================
-
-
 This lightweight module will automatically provide lazyloading of images on your website in a pinterest-style color scheme. It fetches the main color of your image and serves it until your image is loaded.
 
 ### Usage
