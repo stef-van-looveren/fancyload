@@ -1,0 +1,15 @@
+fancyload:
+  js:
+    /libraries/responsive-lazy-loader/js/jquery.responsivelazyloader.js: {}
+    js/fancyload.js: {}
+  dependencies:
+    - core/jquery
+    - core/jquery.once
+
+fancyload.min:
+  js:
+    /libraries/responsive-lazy-loader/js/jquery.responsivelazyloader.min.js: {}
+    js/fancyload.js: {}
+  dependencies:
+    - core/jquery
+    - core/jquery.once

@@ -1,0 +1,7 @@
+name: Fancyload
+type: module
+description: "Pinterest-style Lazy loading of images"
+package: Image
+dependencies:
+  - image
+core: 8.x

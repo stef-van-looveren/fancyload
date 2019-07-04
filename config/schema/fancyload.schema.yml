@@ -1,0 +1,6 @@
+fancyload.configuration:
+  type: config_object
+  label: 'fancyload configuration'
+  mapping:
+    anonymous:
+      type: boolean

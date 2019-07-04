@@ -1,0 +1,7 @@
+fancyload.admin_configure:
+  path: /admin/config/media/fancyload
+  defaults:
+    _title: 'Fancy load images'
+    _form: \Drupal\fancyload\Form\FancyloadConfiguration
+  requirements:
+    _permission: 'administer fancyload'

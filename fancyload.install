@@ -1,0 +1,18 @@
+<?php
+
+function fancyload_requirements() {
+  $requirements = [];
+
+  if (!file_exists('libraries/responsive-lazy-loader/js/jquery.responsivelazyloader.js') || !file_exists('libraries/responsive-lazy-loader/js/jquery.responsivelazyloader.min.js')) {
+    $requirements = array(
+      'fancyload.library' => array(
+        'title' => t('Fancyload'),
+        'value' => t('Responsive lazy loader library missing'),
+        'description' => t("The Responsive lazy loader library could not be found. Download the library <a target=\"_blank\" href=\"https://github.com/jetmartin/responsive-lazy-loader\">here</a>. Place the folder inside the libraries folder so that jquery.responsivelazyloader.js and jquery.responsivelazyloader.min.js are found in libraries/responsive-lazy-loader/js. Visit the Fancyload project page or read the README.md file for more instructions."),
+        'severity' => REQUIREMENT_WARNING,
+      ),
+    );
+  }
+
+  return $requirements;
+}

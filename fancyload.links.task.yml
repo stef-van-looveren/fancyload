@@ -1,0 +1,4 @@
+fancyload.admin_configure:
+  route_name: fancyload.admin_configure
+  title: Configure
+  base_route: fancyload.admin_configure

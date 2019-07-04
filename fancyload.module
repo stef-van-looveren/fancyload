@@ -1,0 +1,159 @@
+<?php
+/**
+ * @file
+ * Fancyload Module
+ *
+ * Make sure cache is cleared and the responsive lazy loading library is installed.
+ */
+
+use Drupal\Core\Template\Attribute;
+use Drupal\fancyload\Hooks\ThemeRegistryAlter;
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function fancyload_theme_registry_alter(&$theme_registry) {
+  $alter = new ThemeRegistryAlter(\Drupal::moduleHandler(), \Drupal::configFactory());
+  $alter->themeRegistryAlter($theme_registry);
+}
+
+/**
+ * Implements hook_preprocess_image().
+ */
+function fancyload_preprocess_image(&$vars) {
+
+  $config = \Drupal::config('fancyload.configuration');
+  $anonymous_only = $config->get('anonymous');
+
+  $is_visible = 1;
+  if ($anonymous_only) {
+    if (\Drupal::currentUser()->isAnonymous()) {
+    } else {
+      $is_visible = 0;
+    }
+  }
+
+  // Disable on admin pages (prevent errors on node pages, views etc.).
+  $is_admin = \Drupal::service('router.admin_context')->isAdminRoute();
+  if ($is_admin) {
+    $is_visible = 0;
+  }
+
+  if ($is_visible == 1) {
+
+    // Add new classes, set original image as data-src etc.
+    $vars['old_attributes'] = new Attribute($vars['attributes']);
+    $uri = $vars['uri'];
+    unset($vars['attributes']['srcset']);
+    $vars['attributes']['class'][] = 'fancyload';
+    $vars['attributes']['data-src'] = file_create_url($uri);
+    $width = $vars['attributes']['width'];
+    $height = $vars['attributes']['height'];
+    $vars['attributes']['data-src'] = file_create_url($uri);
+
+    $path_to_files = file_create_url('public://');
+
+    // see if image color is already collected.
+    $name = pathinfo($uri);
+    // strip whitespaces and dots.
+    $filename = $name['filename'];
+    $filename = preg_replace('/\s+/', '', $filename);
+    $filename = str_replace(".", "", $filename);
+    $filename = preg_replace('/[%()]/', '', $filename);
+
+    $color_value = \Drupal::state()->get('fancyload_' . $filename);
+    if (empty($color_value)) {
+      // Get dominant color of image.
+      $dominant_color = fancyload_get_dominant_color($uri);
+      // Dave dominant color of image.
+      \Drupal::state()->set('fancyload_' . $filename, $dominant_color);
+      $color_value = \Drupal::state()->get('fancyload_' . $filename);
+    }
+
+    // set background to image.
+    $vars['attributes']['style'][] = 'background-color:#' . $color_value . ';';
+
+    // create subfolders for saving transparent png's.
+    $style_name = $vars['style_name'];
+
+    if (empty($style_name)) {
+      $style_name = 'original';
+    }
+
+    $new_folder = 'public://fancyload';
+    file_prepare_directory($new_folder, FILE_CREATE_DIRECTORY);
+
+    $new_folder = 'public://fancyload/' . $style_name;
+    file_prepare_directory($new_folder, FILE_CREATE_DIRECTORY);
+
+    // Check if transparent png already exists, if not create.
+    $transparent = 'public://fancyload/' . $style_name . '/' . $filename . '.png';
+    if (!file_exists($transparent)) {
+      fancyload_create_transparent_file($width, $height, $style_name, $filename);
+    }
+
+    // Set transparent png as source.
+    $vars['attributes']['src'] = $path_to_files . 'fancyload/' . $style_name . '/' . $filename . '.png';
+
+    $vars['#attached']['library'][] = fancyload_choose_library($config);
+
+  }
+}
+
+function fancyload_get_dominant_color($uri) {
+
+  $filename = file_create_url($uri);
+
+  // Use curl because allow fopen not always supported on shared servers.
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, $filename);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+  $contents = curl_exec($ch);
+  curl_close($ch);
+  $temp_image = ImageCreateFromString($contents);
+  // fetch color from image
+  $thumb = imagecreatetruecolor(1, 1);
+  imagecopyresampled($thumb, $temp_image, 0, 0, 0, 0, 1, 1, imagesx($temp_image), imagesy($temp_image));
+  $dominant_color = strtoupper(dechex(imagecolorat($thumb, 0, 0)));
+
+  return $dominant_color;
+}
+
+function fancyload_create_transparent_file($width, $height, $style_name, $filename) {
+  $destination = \Drupal::service('file_system')->realpath(file_default_scheme() . "://");
+  $img = imagecreatetruecolor($width, $height);
+  imagesavealpha($img, TRUE);
+  $color = imagecolorallocatealpha($img, 0, 0, 0, 127);
+  imagefill($img, 0, 0, $color);
+  imagepng($img, $destination . '/fancyload/' . $style_name . '/' . $filename . '.png');
+}
+
+function fancyload_choose_library($config) {
+  $minified = $config->get('minified');
+  if ($minified == 1) {
+    return 'fancyload/fancyload.min';
+  } else {
+    return 'fancyload/fancyload';
+  }
+}
+
+/**
+ * Implements hook_module_uninstall().
+ */
+function fancyload_uninstall()
+{
+  // Delete the fancyload folder
+  file_unmanaged_delete_recursive('public://fancyload');
+
+  // Remove the saved colors: database()->select didn't work for LIKE queries.
+  $query = \Drupal::database()->select('key_value', 'k');
+  $query->fields('k', ['name']);
+  $query->condition('k.collection', 'state');
+  $query->condition('k.name', $query->escapeLike('fancyload_') . '%', 'LIKE');
+  $results = $query->execute()->fetchAll();
+  foreach ($results as $row) {
+    $query = \Drupal::database()->delete('key_value');
+    $query->condition('name', $row->name);
+    $query->execute();
+  }
+}

@@ -1,0 +1,4 @@
+administer Fancyload:
+  title: 'Administer Fancyload'
+  description: 'Administer Fancyload settings.'
+  restrict access: TRUE
