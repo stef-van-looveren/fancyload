@@ -1,9 +1,8 @@
 <?php
+
 /**
  * @file
- * Fancyload Module
- *
- * Make sure cache is cleared and the responsive lazy loading library is installed.
+ * Hook implementations for the Fancyload Module.
  */
 
 use Drupal\Core\Template\Attribute;
@@ -27,8 +26,7 @@ function fancyload_preprocess_image(&$vars) {
 
   $is_visible = 1;
   if ($anonymous_only) {
-    if (\Drupal::currentUser()->isAnonymous()) {
-    } else {
+    if (!\Drupal::currentUser()->isAnonymous()) {
       $is_visible = 0;
     }
   }
@@ -39,67 +37,76 @@ function fancyload_preprocess_image(&$vars) {
     $is_visible = 0;
   }
 
-  if ($is_visible == 1) {
-
-    // Add new classes, set original image as data-src etc.
-    $vars['old_attributes'] = new Attribute($vars['attributes']);
-    $uri = $vars['uri'];
-    unset($vars['attributes']['srcset']);
-    $vars['attributes']['class'][] = 'fancyload';
-    $vars['attributes']['data-src'] = file_create_url($uri);
-    $width = $vars['attributes']['width'];
-    $height = $vars['attributes']['height'];
-    $vars['attributes']['data-src'] = file_create_url($uri);
-
-    $path_to_files = file_create_url('public://');
-
-    // see if image color is already collected.
-    $name = pathinfo($uri);
-    // strip whitespaces and dots.
-    $filename = $name['filename'];
-    $filename = preg_replace('/\s+/', '', $filename);
-    $filename = str_replace(".", "", $filename);
-    $filename = preg_replace('/[%()]/', '', $filename);
-
-    $color_value = \Drupal::state()->get('fancyload_' . $filename);
-    if (empty($color_value)) {
-      // Get dominant color of image.
-      $dominant_color = fancyload_get_dominant_color($uri);
-      // Dave dominant color of image.
-      \Drupal::state()->set('fancyload_' . $filename, $dominant_color);
-      $color_value = \Drupal::state()->get('fancyload_' . $filename);
-    }
-
-    // set background to image.
-    $vars['attributes']['style'][] = 'background-color:#' . $color_value . ';';
-
-    // create subfolders for saving transparent png's.
-    $style_name = $vars['style_name'];
-
-    if (empty($style_name)) {
-      $style_name = 'original';
-    }
-
-    $new_folder = 'public://fancyload';
-    file_prepare_directory($new_folder, FILE_CREATE_DIRECTORY);
-
-    $new_folder = 'public://fancyload/' . $style_name;
-    file_prepare_directory($new_folder, FILE_CREATE_DIRECTORY);
-
-    // Check if transparent png already exists, if not create.
-    $transparent = 'public://fancyload/' . $style_name . '/' . $filename . '.png';
-    if (!file_exists($transparent)) {
-      fancyload_create_transparent_file($width, $height, $style_name, $filename);
-    }
-
-    // Set transparent png as source.
-    $vars['attributes']['src'] = $path_to_files . 'fancyload/' . $style_name . '/' . $filename . '.png';
-
-    $vars['#attached']['library'][] = fancyload_choose_library($config);
-
+  if (!$is_visible) {
+    return;
   }
+
+  // Add new classes, set original image as data-src etc.
+  $vars['old_attributes'] = new Attribute($vars['attributes']);
+  $uri = $vars['uri'];
+  unset($vars['attributes']['srcset']);
+  $vars['attributes']['class'][] = 'fancyload';
+  $vars['attributes']['data-src'] = file_create_url($uri);
+  $width = $vars['attributes']['width'];
+  $height = $vars['attributes']['height'];
+  $vars['attributes']['data-src'] = file_create_url($uri);
+
+  $path_to_files = file_create_url('public://');
+
+  // see if image color is already collected.
+  $name = pathinfo($uri);
+  // strip whitespaces and dots.
+  $filename = $name['filename'];
+  $filename = preg_replace('/\s+/', '', $filename);
+  $filename = str_replace(".", "", $filename);
+  $filename = preg_replace('/[%()]/', '', $filename);
+
+  $color_value = \Drupal::state()->get('fancyload_' . $filename);
+  if (empty($color_value)) {
+    // Get dominant color of image.
+    $dominant_color = fancyload_get_dominant_color($uri);
+    // Dave dominant color of image.
+    \Drupal::state()->set('fancyload_' . $filename, $dominant_color);
+    $color_value = \Drupal::state()->get('fancyload_' . $filename);
+  }
+
+  // set background to image.
+  $vars['attributes']['style'][] = 'background-color:#' . $color_value . ';';
+
+  // create subfolders for saving transparent png's.
+  $style_name = $vars['style_name'];
+
+  if (empty($style_name)) {
+    $style_name = 'original';
+  }
+
+  $new_folder = 'public://fancyload';
+  file_prepare_directory($new_folder, FILE_CREATE_DIRECTORY);
+
+  $new_folder = 'public://fancyload/' . $style_name;
+  file_prepare_directory($new_folder, FILE_CREATE_DIRECTORY);
+
+  // Check if transparent png already exists, if not create.
+  $transparent = 'public://fancyload/' . $style_name . '/' . $filename . '.png';
+  if (!file_exists($transparent)) {
+    fancyload_create_transparent_file($width, $height, $style_name, $filename);
+  }
+
+  // Set transparent png as source.
+  $vars['attributes']['src'] = $path_to_files . 'fancyload/' . $style_name . '/' . $filename . '.png';
+
+  $vars['#attached']['library'][] = fancyload_choose_library($config);
 }
 
+/**
+ * Fetches the dominant color of an image.
+ * 
+ * @param string $uri
+ *   The location of the image to get color from.
+ * 
+ * @return string
+ *   The hexadecimal representation of the dominant color.
+ */
 function fancyload_get_dominant_color($uri) {
 
   $filename = file_create_url($uri);
@@ -119,6 +126,18 @@ function fancyload_get_dominant_color($uri) {
   return $dominant_color;
 }
 
+/**
+ * Creates a transparent file for a file
+ * 
+ * @param int $width
+ *   The image width.
+ * @param int $height
+ *   The image height.
+ * @param string $style_name
+ *   The image style.
+ * @param string $filename
+ *   The location of the image.
+ */
 function fancyload_create_transparent_file($width, $height, $style_name, $filename) {
   $destination = \Drupal::service('file_system')->realpath(file_default_scheme() . "://");
   $img = imagecreatetruecolor($width, $height);
@@ -128,6 +147,15 @@ function fancyload_create_transparent_file($width, $height, $style_name, $filena
   imagepng($img, $destination . '/fancyload/' . $style_name . '/' . $filename . '.png');
 }
 
+/**
+ * Chooses if the library should be minified or not.
+ * 
+ * @param $config
+ *   The module configuration.
+ * 
+ * @return string
+ *   The name of the library.
+ */
 function fancyload_choose_library($config) {
   $minified = $config->get('minified');
   if ($minified == 1) {
@@ -140,12 +168,11 @@ function fancyload_choose_library($config) {
 /**
  * Implements hook_module_uninstall().
  */
-function fancyload_uninstall()
-{
-  // Delete the fancyload folder
+function fancyload_uninstall() {
+  // Delete the fancyload folder.
   file_unmanaged_delete_recursive('public://fancyload');
 
-  // Remove the saved colors: database()->select didn't work for LIKE queries.
+  // Remove the saved colors.
   $query = \Drupal::database()->select('key_value', 'k');
   $query->fields('k', ['name']);
   $query->condition('k.collection', 'state');

@@ -5,6 +5,9 @@ namespace Drupal\fancyload\Hooks;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 
+/**
+ * A theme registry alter implementations.
+ */
 class ThemeRegistryAlter {
 
   /** @var \Drupal\Core\Extension\ModuleHandlerInterface */
@@ -26,4 +29,5 @@ class ThemeRegistryAlter {
       $theme_registry['image']['path'] = $this->moduleHandler->getModule('fancyload')->getPath() . '/templates';
       $theme_registry['image']['template'] = 'fancyload-image';
   }
+  
 }

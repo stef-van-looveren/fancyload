@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Fancyload\Form\FancyloadAdminConfigure.
- */
-
 namespace Drupal\fancyload\Form;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -14,6 +9,9 @@ use Drupal\Core\Render\Element;
 use Drupal\Core\Theme\Registry;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+/**
+ * Admin config form.
+ */
 class FancyloadConfiguration extends ConfigFormBase {
 
   /**
@@ -91,7 +89,7 @@ class FancyloadConfiguration extends ConfigFormBase {
       \Drupal::messenger()->addStatus(t("The Responsive lazy loader library is installed correctly."));
     }
 
-    $config = $this->config('Fancyload.configuration');
+    $config = $this->config('fancyload.configuration');
 
     $form['anonymous'] = [
         '#type' => 'checkbox',

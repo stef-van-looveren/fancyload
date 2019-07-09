@@ -1,2 +1,3 @@
-enabled: FALSE
-
+enabled: TRUE
+anonymous: TRUE
+minified: TRUE

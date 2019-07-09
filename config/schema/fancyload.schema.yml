@@ -4,3 +4,7 @@ fancyload.configuration:
   mapping:
     anonymous:
       type: boolean
+    enable:
+      type: boolean
+    minified:
+      type: boolean

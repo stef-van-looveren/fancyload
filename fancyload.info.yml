@@ -1,7 +1,7 @@
 name: Fancyload
 type: module
-description: "Pinterest-style Lazy loading of images"
+description: "Pinterest-style lazy loading of images"
 package: Image
 dependencies:
-  - image
+  - drupal:image
 core: 8.x
